@@ -19,10 +19,11 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    //return view('welcome');
+	echo "Hello World from admin page laravel.";
 });
 
 Route::get('/test', function(){
-    return view('form-test');
-            
+    //return view('form-test');
+     echo 'testing by the way...';       
 });
