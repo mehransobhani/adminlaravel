@@ -13,6 +13,7 @@ use Exception;
 use Illuminate\Database\Eloquent\JsonEncodingException;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Http\Request;
+use Illuminate\Queue\RedisQueue;
 use Illuminate\Support\Facades\DB;
 use stdClass;
 
@@ -219,21 +220,34 @@ class ArtController extends Controller
         echo json_encode(array('status' => 'done', 'message' => 'all links successfully removed'));
     }
 
-    public function removeLink(Request $request){
-        if(!isset($request->artId) || !isset($request->courseId)){
+    public function removeCourseFromArt(Request $request){
+        if(!isset($request->courseId) || !isset($request->artId)){
             echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'not enough paramter', 'umessage' => 'ورودی کافی نیست'));
             exit();
         }
 
-        $artId = $request->artId;
         $courseId = $request->courseId;
+        $artId = $request->artId;
 
-        DB::delete(
-            "DELETE FROM art_courses 
-            WHERE art_id = $artId AND course_id = $courseId "
-        );
-
-        echo json_encode(array('status' => 'done', 'message' => 'link successfully removed'));  
-    }
+        $queryResult = DB::delete("DELETE FROM art_courses WHERE art_id = $artId AND course_id = $courseId");
+        
+        if($queryResult){
+            echo json_encode(array('status' => 'done', 'message' => 'link successfully removed'));
+            exit();
+        }else{
+            echo json_encode(array('status' => 'failed', 'source' => 'q', 'message' => 'an error occured while deleting the link', 'umessage' => 'خطا هنگام حذف لینک'));
+        }
+    }   
     
+    public function removeCourseLink(Request $request){
+        if(!isset($request->artId)){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'not enogh parameter', 'message' => 'ورودی کافی نیست'));
+            exit();
+        }
+        $artId = $request->artId;
+        DB::select(
+            "DELETE FROM art_courses WHERE art_id = $artId "
+        );
+        echo json_encode(array('status' => 'done', 'message' => 'links successfully removed', 'umessage' => 'لینک موردنظر با موفقیت حذف شد'));
+    }
 }

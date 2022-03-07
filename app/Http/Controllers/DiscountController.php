@@ -1263,20 +1263,31 @@ class DiscountController extends Controller
         $sleepQuery = '';
         $factorQuery = '';
 
-        if(isset($request->minPrice) && isset($request->maxPrice)){
-            $priceQuery = " AND PP.price >= $request->minPrice AND PP.price <= $request->maxPrice " ;
+        if(isset($request->minPrice)){
+            $priceQuery = $priceQuery . " AND PP.price >= $request->minPrice ";
+        }
+        if(isset($request->maxPrice)){
+            $priceQuery = $priceQuery . " AND PP.price <= $request->maxPrice " ;
         }
 
-        if(isset($request->minStock) && isset($request->maxStock)){
-            $stockQuery = " AND PP.stock >= $request->minStock AND PP.stock <= $request->maxStock " ;
+        if(isset($request->minStock)){
+            $stockQuery = $stockQuery . " AND PP.stock >= $request->minStock ";
+        }
+        if(isset($request->maxStock)){
+            $stockQuery = $stockQuery . " AND PP.stock <= $request->maxStock " ;
         }
 
-        if(isset($request->minSleep) && isset($request->maxSleep)){
-            $sleepQuery = " AND (PS.sleep_daily * P.stock) >= $request->minSleep AND (PS.sleep_daily * P.stock) <= $request->maxSleep ";
+        if(isset($request->minSleep)){
+            $sleepQuery = $sleepQuery . " AND (PS.sleep_daily * P.stock) >= $request->minSleep ";
         }
-
-        if(isset($request->minFactor) && isset($request->maxFactor)){
-            $factorQuery = " AND PS.last_factor >= $request->minFactor AND PS.last_factor <= $request->maxFactor ";
+        if(isset($request->maxSleep)){
+            $sleepQuery = $sleepQuery . " AND (PS.sleep_daily * P.stock) <= $request->maxSleep ";
+        }
+        if(isset($request->minFactor)){
+            $factorQuery = $factorQuery . " AND PS.last_factor >= $request->minFactor ";
+        }
+        if(isset($request->maxFactor)){
+            $factorQuery = $factorQuery . " AND PS.last_factor <= $request->maxFactor ";
         }
         
         $products = DB::select( 
@@ -1526,5 +1537,29 @@ class DiscountController extends Controller
         }catch(Exception $e){
             echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => $e->getMessage(), 'umessage' => 'خطا هنگام حذف محصول'));
         }
+    }
+
+    public function multiProductDiscountInformation(Request $request){
+        if(!isset($request->discountId)){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'not enough parameter', 'umessage' => 'ورودی کافی نیست'));
+            exit();
+        }
+        $discountId = $request->discountId;
+
+        $discount = DB::select(
+            "SELECT title, `description`,  `start_date`, `finish_date`, expiration_date, `status`  
+            FROM discounts 
+            WHERE id = $discountId AND `type_id` = 5  
+            LIMIT 1 "
+        );
+
+        if(count($discount) === 0){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'discount not found', 'umessage' => 'تخفیف موردنظر یافت نشد'));
+            exit();
+        }
+
+        $discount = $discount[0];
+
+        echo json_encode(array('status' => 'done', 'message' => 'discount information successfully found', 'information' => $discount));
     }
 }

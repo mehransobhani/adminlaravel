@@ -74,6 +74,7 @@ Route::middleware([ApiAdminAuthenticationMiddleware::class])->group(function () 
     Route::post('/search-discount-relevant-dependencies',                           [DiscountController::class, 'searchRelevantDependencies']);
     Route::post('/check-cart-products-discount',                                    [DiscountController::class, 'checkCartProductsDiscount']); //done
     Route::post('/check-products-discount',                                         [DiscountController::class, 'checkProductsDiscount']); //done
+    Route::post('/discount/multi-product-discount-information',                     [DiscountController::class, 'multiProductDiscountInformation']); // done
     Route::post('/discount/no-paginated-filter-category-products',                  [DiscountController::class, 'noPaginatedFilterCategoryProducts']); // TO BE TESTED!
     Route::post('/discount/add-products-to-multi-product-discount',                 [DiscountController::class, 'addProductstoMultiProductDiscount']); // DONE!
     Route::post('/discount/edit-multi-product-discount-general-information',        [DiscountController::class, 'editMultiProductDiscountGeneralInformation']); // OK!
@@ -103,28 +104,31 @@ Route::middleware([ApiAdminAuthenticationMiddleware::class])->group(function () 
     Route::get('/users-come-but-not-buy',                                           [QueryController::class, 'getUsersWhoComeButDidntBuy']);
     Route::get('/custom-query',                                                     [QueryController::class, 'customQuery']);
 
-    Route::post('/category/filtered-paginated-category-course',                      [CategoryController::class, 'filteredPaginatedCategoryCourse']);
+    Route::post('/category/filtered-paginated-category-course',                     [CategoryController::class, 'filteredPaginatedCategoryCourse']);
 
     /***| CATEGORY ROUTES |***/
-    Route::get('/active-categories',                                                [CategoryController::class, 'getActiveCategories']); // TO BE TESTED!
+    Route::post('/active-categories',                                               [CategoryController::class, 'getActiveCategories']); // TO BE TESTED!
     Route::get('/category/unlinked-root-categories',                                [CategoryController::class, 'unlinkedRootCategories']); // OK!
     Route::get('/category/filtered-paginated-linked-categories',                    [CategoryController::class, 'filteredPaginatedLinkedCategories']); // TO BE TESTED!
     Route::post('/category/add-category-course-link',                               [CategoryController::class, 'addCategoryCourseLink']); // OK!
 
     /***| ART ROUTES |***/
-    Route::get('/art/active-arts',                                                  [ArtController::class,  'activeArts']);
-    Route::get('/art/unlinked-arts',                                                [ArtController::class,  'unlinkedArts']);
     Route::post('/art/filtered-paginated-linked-arts',                              [ArtController::class,  'filteredPaginatedLinkedArts']);
     Route::post('/art/add-art-course-link',                                         [ArtController::class,  'addArtCourseLink']);
     Route::post('/art/remove-course-link',                                          [ArtController::class,  'removeCourseLink']);
     Route::post('/art/remove-art-links',                                            [ArtController::class,  'removeArtLinks']);
     Route::post('/art/arts-linked-courses',                                         [ArtController::class,  'artsLinkedCourses']);
     Route::post('/art/add-course-to-art',                                           [ArtController::class,  'addCourseToArt']);
-
-    /***| ACADEMY ROUTES |***/
-    Route::get('/academy/all-courses',                                              [AcademyController::class,  'allCourses']); // OK!
+    Route::post('/art/remove-course-from-art',                                      [ArtController::class,  'removeCourseFromArt']);
 
     Route::get('/test-date', function(){
         echo date('Y-m-d H:i:s', 1438320376);
     });
 });
+
+/***| Art ROUTES |***/
+Route::get('/art/active-arts',                                                      [ArtController::class,  'activeArts']);
+Route::get('/art/unlinked-arts',                                                    [ArtController::class,  'unlinkedArts']);
+
+/***| ACADEMY ROUTES |***/
+Route::get('/academy/all-courses',                                                  [AcademyController::class,  'allCourses']); // OK!
