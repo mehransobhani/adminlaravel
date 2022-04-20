@@ -1562,4 +1562,6 @@ class DiscountController extends Controller
 
         echo json_encode(array('status' => 'done', 'message' => 'discount information successfully found', 'information' => $discount));
     }
+
+    
 }
