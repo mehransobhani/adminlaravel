@@ -52,7 +52,7 @@ class DiscountController extends Controller
             }
 
             $allDiscounts = Discount::where('status', 1)->where(function($query){
-                return $query->where('type', 'product')->orWhere('type', 'category');
+                return $query->where('type_id', 1)->orWhere('type_id', 2);
             })->where(function($query){
                 return $query->where('expiration_date', null)->orWhere([['expiration_date', '>=', time()]]);
             })->where(function($query) use ($neworder){
@@ -68,9 +68,9 @@ class DiscountController extends Controller
                     foreach($allDiscounts as $discount){
                         if(($discount->start_date === null && $discount->finish_date === null) || ($discount->start_date !== null && $discount->finish_date !== null && !checkUserOrderBetweenDatee($userId, $discount->start_date, $discount->finish_date))){
                             $search = false;
-                            if($discount->type === 'product' && ($discount->products->count() === 0 || $discount->products->where('dependency_id', $productsInformationObject->productIds[$i])->count() !== 0)){
+                            if($discount->type_id === 1 && ($discount->products->count() === 0 || $discount->products->where('dependency_id', $productsInformationObject->productIds[$i])->count() !== 0)){
                                 $search = true;
-                            }else if($discount->type === 'category' && ($discount->categories->count() === 0 || $discount->categories->where('dependency_id', $productsInformationObject->categoryIds[$i])->count() !== 0)){
+                            }else if($discount->type_id === 2 && ($discount->categories->count() === 0 || $discount->categories->where('dependency_id', $productsInformationObject->categoryIds[$i])->count() !== 0)){
                                 $search = true;
                             }
                             if($search){
@@ -139,7 +139,7 @@ class DiscountController extends Controller
             }
             $responseArray = array();
             $allDiscounts = Discount::where(function($query){
-                return $query->where('type', 'product')->orWhere('type', 'category');
+                return $query->where('type_id', 1)->orWhere('type_id', 2);
             })->where(function($query){
                 return $query->where('expiration_date', null)->orWhere([['expiration_date', '>=', time()]]);
             })->where(function($query){
@@ -152,8 +152,8 @@ class DiscountController extends Controller
                     foreach($allDiscounts as $discount){
                         if($discount->users->count() === 0 && $discount->provinces->count() === 0){
                             if($discount->min_price === null || $discount->min_price <= $productsInformationObject->productPrices[$i]){
-                                if(($discount->type === 'product' && ($discount->products->count() === 0 || $discount->products->where('dependency_id', $productsInformationObject->productIds[$i])->count() > 0)) ||
-                                ($discount->type === 'category' && ($discount->categories->count() === 0 || $discount->categories->where('dependency_id', $$productsInformationObject->categoryIds[$i])->count() > 0))){
+                                if(($discount->type_id === 1 && ($discount->products->count() === 0 || $discount->products->where('dependency_id', $productsInformationObject->productIds[$i])->count() > 0)) ||
+                                ($discount->type === 2 && ($discount->categories->count() === 0 || $discount->categories->where('dependency_id', $$productsInformationObject->categoryIds[$i])->count() > 0))){
                                     if($discount->price !== null){
                                         $reducedPrice += $discount->price;
                                     }
@@ -199,14 +199,14 @@ class DiscountController extends Controller
                     if($user->count() !== 0){
                         $user = $user->first();
                         $userId = $user->id;
-                        $dependency = DiscountDependency::where('discount_id', $discountId)->where('dependency_type', $dependencyType)->where('dependency_id', $userId);
+                        $dependency = DiscountDependency::where('discount_id', $discountId)->where('type_id', 4)->where('dependency_id', $userId);
                         if($dependency->count() === 0){
                             $discountDependency = new DiscountDependency();
-                            $discountDependency->dependency_type = 'user';
+                            $discountDependency->type_id = 4;
                             $discountDependency->discount_id = $discountId;
                             $discountDependency->dependency_id = $userId;
                             if($discountDependency->save()){
-                                $dependency = DiscountDependency::where('dependency_type', 'user')->where('dependency_id', $userId)->first();
+                                $dependency = DiscountDependency::where('type_id', 4)->where('dependency_id', $userId)->first();
                                 echo json_encode(array('status' => 'done', 'message' => 'dependency added successfully', 'id' => $dependency->id, 'username' => $user->username, 'name' => $user->name));
                             }else{
                                 echo json_encode(array('status' => 'failed', 'an error occured while adding a new user dependency'));
@@ -221,14 +221,14 @@ class DiscountController extends Controller
                     $province = Province::where('id', $dependencyId);
                     if($province->count() !== 0){
                         $province = $province->first();
-                        $dependency = DiscountDependency::where('discount_id', $discountId)->where('dependency_type', $dependencyType)->where('dependency_id', $dependencyId);
+                        $dependency = DiscountDependency::where('discount_id', $discountId)->where('type_id', 3)->where('dependency_id', $dependencyId);
                         if($dependency->count() === 0){
                             $discountDependency = new DiscountDependency();
-                            $discountDependency->dependency_type = $dependencyType;
+                            $discountDependency->type_id = 3;
                             $discountDependency->discount_id = $discountId;
                             $discountDependency->dependency_id = $dependencyId;
                             if($discountDependency->save()){
-                                $dependency = DiscountDependency::where('dependency_type', $dependencyType)->where('dependency_id', $dependencyId)->first();
+                                $dependency = DiscountDependency::where('type_id', 3)->where('dependency_id', $dependencyId)->first();
                                 echo json_encode(array('status' => 'done', 'message' => 'dependency added successfully', 'id' => $dependency->id, 'name' => $province->name));
                             }else{
                                 echo json_encode(array('status' => 'failed', 'an error occured while adding a new province dependency'));
@@ -243,14 +243,14 @@ class DiscountController extends Controller
                     $product = Product::where('id', $dependencyId);
                     if($product->count() !== 0){
                         $product = $product->first();
-                        $dependency = DiscountDependency::where('discount_id', $discountId)->where('dependency_type', $dependencyType)->where('dependency_id', $dependencyId);
+                        $dependency = DiscountDependency::where('discount_id', $discountId)->where('type_id', 1)->where('dependency_id', $dependencyId);
                         if($dependency->count() === 0){
                             $discountDependency = new DiscountDependency();
-                            $discountDependency->dependency_type = $dependencyType;
+                            $discountDependency->type_id = 1;
                             $discountDependency->discount_id = $discountId;
                             $discountDependency->dependency_id = $dependencyId;
                             if($discountDependency->save()){
-                                $dependency = DiscountDependency::where('dependency_type', $dependencyType)->where('dependency_id', $dependencyId)->first();
+                                $dependency = DiscountDependency::where('type_id', 1)->where('dependency_id', $dependencyId)->first();
                                 echo json_encode(array('status' => 'done', 'message' => 'dependency added successfully', 'id' => $dependency->id, 'name' => $product->prodName_fa));
                             }else{
                                 echo json_encode(array('status' => 'failed', 'an error occured while adding a new product dependency'));
@@ -265,14 +265,14 @@ class DiscountController extends Controller
                     $category = Category::where('id', $dependencyId);
                     if($category->count() !== 0){
                         $category = $category->first();
-                        $dependency = DiscountDependency::where('discount_id', $discountId)->where('dependency_type', $dependencyType)->where('dependency_id', $dependencyId);
+                        $dependency = DiscountDependency::where('discount_id', $discountId)->where('type_id', 2)->where('dependency_id', $dependencyId);
                         if($dependency->count() === 0){
                             $discountDependency = new DiscountDependency();
-                            $discountDependency->dependency_type = $dependencyType;
+                            $discountDependency->type_id = 2;
                             $discountDependency->discount_id = $discountId;
                             $discountDependency->dependency_id = $dependencyId;
                             if($discountDependency->save()){
-                                $dependency = DiscountDependency::where('dependency_type', $dependencyType)->where('dependency_id', $dependencyId)->first();
+                                $dependency = DiscountDependency::where('type_id', 2)->where('dependency_id', $dependencyId)->first();
                                 echo json_encode(array('status' => 'done', 'message' => 'dependency added successfully', 'id' => $dependency->id, 'name' => $category->name));
                             }else{
                                 echo json_encode(array('status' => 'failed', 'an error occured while adding a new product dependency'));
@@ -684,7 +684,7 @@ class DiscountController extends Controller
                                 if($dependencyPermission){
                                     $reducedPrice = 0;
                                     $focusedPrice = $orderPrice;
-                                    if($discount->type === 'shipping'){
+                                    if($discount->type_id === 3){
                                         $focusedPrice = $shippingPrice;
                                     }
                                     if($discount->price !== null){
@@ -698,9 +698,9 @@ class DiscountController extends Controller
                                         }
                                     }
                                     if($reducedPrice === 0){
-                                        echo json_encode(array('status' => 'done', 'discount' => true, 'discountType' => $discount->type, 'price' => 0, 'percent' => 0, 'joinable' => $discount->joinable));
+                                        echo json_encode(array('status' => 'done', 'discount' => true, 'discountTypeId' => $discount->type_id, 'price' => 0, 'percent' => 0, 'joinable' => $discount->joinable));
                                     }else{
-                                        echo json_encode(array('status' => 'done', 'discount' => true, 'discountType' => $discount->type, 'price' => (integer)(($focusedPrice - $reducedPrice)/100) * 100, 'percent' => (integer)(($reducedPrice / $focusedPrice)*100), 'joinable' => $discount->joinable));
+                                        echo json_encode(array('status' => 'done', 'discount' => true, 'discountTypeId' => $discount->type_id, 'price' => (integer)(($focusedPrice - $reducedPrice)/100) * 100, 'percent' => (integer)(($reducedPrice / $focusedPrice)*100), 'joinable' => $discount->joinable));
                                     }
                                 }else{
                                     echo json_encode(array('status' => 'done', 'discount' => false, 'message' => 'does not have dependency permission'));
@@ -726,15 +726,15 @@ class DiscountController extends Controller
     }
 
     public function addInitialDiscount(Request $request){
-        if(isset($request->type)){
-            $type = $request->type;
+        if(isset($request->typeId)){
+            $typeId = $request->typeId;
             $time = time();
             $discount = new Discount();
-            $discount->type = $type;
+            $discount->type_id = $typeId;
             $discount->date = $time;
             if($discount->save()){
-                $discount = Discount::where('type', $type)->orderBy('id', 'DESC')->first();
-                echo json_encode(array('status' => 'done', 'id' => $discount->id, 'message' => 'discount added successfully'));
+                $discount = Discount::where('type_id', $typeId)->orderBy('id', 'DESC')->first();
+                echo json_encode(array('status' => 'done', 'id' => $discount->id, 'typeId' => $typeId, 'message' => 'discount added successfully'));
             }else{
                 echo json_encode(array('status' => 'failed', 'message' => 'an error occured while adding a new discount'));
             }
@@ -777,7 +777,7 @@ class DiscountController extends Controller
             }
             
             $allDiscounts = Discount::where(function($query){
-                return $query->where('type', 'order')->orWhere('type', 'shipping');
+                return $query->where('type_id', 4)->orWhere('type_id', 3);
             })->where('code', null)->where('status', 1)->where(function($query){
                 return $query->where('expiration_date', null)->orWhere('expiration_date', '>=', time());
             })->where(function($query){
@@ -862,7 +862,7 @@ class DiscountController extends Controller
                             }
                         }
                         if($dependencyPermission){
-                            if($discount->type === 'shipping'){
+                            if($discount->type_id === 3){
                                 if($discount->price !== null){
                                     $shippingReducedPrice += $discount->price;
                                 }else if($discount->percent!== null){
@@ -873,7 +873,7 @@ class DiscountController extends Controller
                                         $shippingReducedPrice = $discount->max_price;
                                     }
                                 }
-                            }else if($discount->type === 'order'){
+                            }else if($discount->type_id === 4){
                                 if($discount->price !== null){
                                     $orderReducedPrice += $discount->price;
                                 }else if($discount->percent!== null){
@@ -912,7 +912,7 @@ class DiscountController extends Controller
             $discount = Discount::where('id', $discountId);
             if($discount->count() !== 0){
                 if($dependencyType === 'user'){
-                    $userDependencies = DiscountDependency::where('discount_id', $discountId)->where('dependency_type', 'user');
+                    $userDependencies = DiscountDependency::where('discount_id', $discountId)->where('type_id', 4);
                     if($userDependencies->count() !== 0){
                         $userDependencies = $userDependencies->get();
                         $usersArray = array();
@@ -935,7 +935,7 @@ class DiscountController extends Controller
                         echo json_encode(array('status' => 'done', 'message' => 'users not found', 'users'=> array()));
                     }
                 }else if($dependencyType === 'province'){
-                    $provinceDependencies = DiscountDependency::where('discount_id', $discountId)->where('dependency_type', 'province');
+                    $provinceDependencies = DiscountDependency::where('discount_id', $discountId)->where('type_id', 3);
                     if($provinceDependencies->count() !== 0){
                         $provinceDependencies = $provinceDependencies->get();
                         $provincesArray = array();
@@ -948,7 +948,7 @@ class DiscountController extends Controller
                         echo json_encode((array('status' => 'done', 'message' => 'there is not any province', 'provinces' => array())));
                     }
                 }else if($dependencyType === 'product'){
-                    $productDependencies = DiscountDependency::where('discount_id', $discountId)->where('dependency_type', 'product');
+                    $productDependencies = DiscountDependency::where('discount_id', $discountId)->where('type_id', 1);
                     if($productDependencies->count() !== 0){
                         $productDependencies = $productDependencies->get();
                         $productsArray = array();
@@ -961,7 +961,7 @@ class DiscountController extends Controller
                         echo json_encode((array('status' => 'done', 'message' => 'there is not any product', 'products' => array())));
                     }
                 }else if($dependencyType === 'category'){
-                    $categoryDependencies = DiscountDependency::where('discount_id', $discountId)->where('dependency_type', 'category');
+                    $categoryDependencies = DiscountDependency::where('discount_id', $discountId)->where('type_id', 2);
                     if($categoryDependencies->count() !== 0){
                         $categoryDependencies = $categoryDependencies->get();
                         $categoriesArray = array();
@@ -1054,12 +1054,24 @@ class DiscountController extends Controller
     }
 
     public function getDiscountsBasicInformation(Request $request){
-        $discounts = Discount::select('id', 'title', 'type', 'status')->orderBy('id', 'DESC');
+        $discounts = Discount::select('id', 'title', 'type_id', 'status')->orderBy('id', 'DESC');
         if($discounts->count() !== 0){
             $discounts = $discounts->get();
             $discountsArray = array();
             foreach($discounts as $discount){
-                array_push($discountsArray, array('discountId' => $discount->id, 'title' => $discount->title, 'type' => $discount->type, 'status' => $discount->status));
+                $type = '';
+                if($discount->type_id === 1){
+                    $type = 'product';
+                }else if($discount->type_id === 2){
+                    $type = 'category';
+                }else if($discount->type_id === 3){
+                    $type = 'province';
+                }else if($discount->type_id === 4){
+                    $type = 'order';
+                }else if($discount->type_id === 5){
+                    $type = 'multi-product';
+                }
+                array_push($discountsArray, array('discountId' => $discount->id, 'title' => $discount->title, 'type' => $type, 'status' => $discount->status));
             }
             echo json_encode(array('status' => 'done', 'message' => 'found the discounts', 'discounts' => $discountsArray));
         }else{
@@ -1113,16 +1125,18 @@ class DiscountController extends Controller
         }
 
         if($type === 'product'){
-            $typeFilterQuery = " WHERE D.type = 'product' ";
+            $typeFilterQuery = " WHERE D.type_id = 1 ";
         }else if($type === 'category'){
-            $typeFilterQuery = " WHERE D.type = 'category' ";
+            $typeFilterQuery = " WHERE D.type_id = 2 ";
         }else if($type === 'order'){
-            $typeFilterQuery = " WHERE D.type = 'order' ";
+            $typeFilterQuery = " WHERE D.type_id = 4 ";
         }else if($type === 'shipping'){
-            $typeFilterQuery = " WHERE D.type = 'shipping' ";
+            $typeFilterQuery = " WHERE D.type_id = 3 ";
+        }else if($type === 'multi-product'){
+            $typeFilterQuery = " WHERE D.type_id = 5 ";
         }else if($type === 'code'){
-            $typeFilterQuery = " WHERE (D.type = 'order' OR D.type = 'shipping') AND D.code IS NOT NULL " ; 
-        }else{
+            $typeFilterQuery = " WHERE (D.type_id = 4 OR D.type_id = 3) AND D.code IS NOT NULL " ; 
+        }else if($type == 'all'){
             $typeFilterQuery = " WHERE D.id > 0 ";
         }
 
@@ -1134,8 +1148,10 @@ class DiscountController extends Controller
         }
 
         $allDiscounts = DB::select(
-            "SELECT D.id AS discountId, D.title, D.type, D.status  
-            FROM discounts D $typeFilterQuery $activeFilterQuery $startDateQuery $finishDateQuery 
+            "SELECT D.id AS discountId, D.title, D.type_id AS typeId, DT.fa_name AS `type`, D.expiration_date, D.start_date, D.finish_date, D.status 
+            FROM discounts D 
+            INNER JOIN discount_types DT ON DT.id = D.type_id 
+            $typeFilterQuery $activeFilterQuery $startDateQuery $finishDateQuery 
             ORDER BY D.date DESC, D.id DESC "
         );
 
@@ -1148,7 +1164,16 @@ class DiscountController extends Controller
         $i = ($page - 1) * 20;
         $selectedDiscounts = [];
         for($i; $i<$count && count($selectedDiscounts)<20; $i++){
-            array_push($selectedDiscounts, $allDiscounts[$i]);
+            $discount  = $allDiscounts[$i];
+            $discount->smartStatus = 0;
+            if($discount->status === 1 && 
+                ($discount->expiration_date === NULL || $discount->expiration_date >= $time) &&
+                ($discount->start_date === NULL || $discount->start_date <= $time) && 
+                ($discount->finish_date === NULL || $discount->finish_date >= $time )){
+                
+                $discount->smartStatus = 1;
+            }
+            array_push($selectedDiscounts, $discount);
         }
 
         echo json_encode(array('status' => 'done', 'found' => true, 'count' => $count, 'maxPage' => ceil($count / 20), 'discounts' => $selectedDiscounts, 'message' => 'discounts found successfully'));
@@ -1224,4 +1249,319 @@ class DiscountController extends Controller
         }
         echo json_encode(array('status' => 'done', 'found' => true, 'count' => $count, 'reports' => $selectedReports, 'message' => 'reports found successfully'));
     }
+
+    public function noPaginatedFilterCategoryProducts(Request $request){
+        if(!isset($request->categoryId) || !isset($request->discountId)){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'not enough information', 'umessage' => 'ورودی کافی نیست'));
+            exit();
+        }
+        $categoryId = intval($request->categoryId);
+        $discountId = $request->discountId;
+
+        $priceQuery = '';
+        $stockQuery = '';
+        $sleepQuery = '';
+        $factorQuery = '';
+
+        if(isset($request->minPrice)){
+            $priceQuery = $priceQuery . " AND PP.price >= $request->minPrice ";
+        }
+        if(isset($request->maxPrice)){
+            $priceQuery = $priceQuery . " AND PP.price <= $request->maxPrice " ;
+        }
+
+        if(isset($request->minStock)){
+            $stockQuery = $stockQuery . " AND PP.stock >= $request->minStock ";
+        }
+        if(isset($request->maxStock)){
+            $stockQuery = $stockQuery . " AND PP.stock <= $request->maxStock " ;
+        }
+
+        if(isset($request->minSleep)){
+            $sleepQuery = $sleepQuery . " AND (PS.sleep_daily * P.stock) >= $request->minSleep ";
+        }
+        if(isset($request->maxSleep)){
+            $sleepQuery = $sleepQuery . " AND (PS.sleep_daily * P.stock) <= $request->maxSleep ";
+        }
+        if(isset($request->minFactor)){
+            $factorQuery = $factorQuery . " AND PS.last_factor >= $request->minFactor ";
+        }
+        if(isset($request->maxFactor)){
+            $factorQuery = $factorQuery . " AND PS.last_factor <= $request->maxFactor ";
+        }
+        
+        $products = DB::select( 
+            "SELECT P.id, 
+                P.prodName_fa AS productName, 
+                P.url AS productUrl, 
+                P.prodUnite AS productUnit, 
+                P.buyPrice AS productBuyPrice, 
+                PP.price AS productPrice, 
+                PP.stock AS productStock, 
+                (PS.sleep_daily * P.stock) AS productSleep, 
+                PS.profit_margin AS productProfitMargin 
+            FROM products P 
+                INNER JOIN product_category PC ON P.id = PC.product_id 
+                INNER JOIN product_pack PP ON P.id = PP.product_id 
+                INNER JOIN product_info `PI` ON P.id = `PI`.product_id  
+                INNER JOIN product_statistics PS ON P.id = PS.product_id 
+            WHERE PC.category = $categoryId AND 
+                P.prodStatus = 1 AND 
+                P.stock > 0 AND 
+                PP.status = 1 AND 
+                PP.stock > 0 AND 
+                (PP.stock * PP.count <= P.stock) 
+                AND P.id NOT IN ( 
+                    SELECT dependency_id 
+                    FROM discount_dependencies 
+                    WHERE discount_id = $discountId 
+                ) 
+                $priceQuery 
+                $stockQuery 
+                $sleepQuery 
+                $factorQuery
+            ORDER BY P.prodName_fa ASC "
+        );
+
+        if(count($products) === 0){
+            echo json_encode(array('status' => 'done', 'found' => false, 'source' => 'c', 'message' => 'there is any available product in this filter', 'umessage' => 'موردی یافت نشد', 'products' => []));
+            exit();
+        }
+        
+        echo json_encode(array('status' => 'done', 'found' => true, 'message' => 'products successfully found', 'products' => $products));
+    }
+
+    public function addProductsToMultiProductDiscount(Request $request){
+        if(!isset($request->discountId) || !isset($request->products)){
+            echo json_encode(array('status' => 'failed', 'message' => 'not enough parameter', 'umessage' => 'ورودی کافی نیست'));
+            exit();
+        }
+        $discountId = $request->discountId;
+        $discountInformation = DB::select(
+            "SELECT id FROM discounts WHERE id = $discountId AND `type_id` = 5 "
+        );
+        if(count($discountInformation) === 0){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'discount does not exist or it is not multi-product', 'umessage' => 'این تخفیف وجود ندارد و یا از نوع محصول ویژه نیست'));
+            exit();
+        }
+        $products = $request->products;
+        foreach($products as $p){
+            $price = 0;
+            $percent = 0;
+            $finalStock = $p['finalStock'];
+            $productId = $p['id'];
+            if($p['percent'] !== 0){
+                $percent = $p['percent'];
+            }else if($p['price']){
+                $price = $p['price'];
+            }
+            DB::insert(
+                "INSERT INTO discount_dependencies (
+                    discount_id, `type_id`, dependency_id, percent, price, final_stock 
+                ) VALUES (
+                    $discountId, 1, $productId, $percent, $price, $finalStock
+                )"
+            );
+        }
+        
+        echo json_encode(array('status' => 'done', 'message' => 'discount dependencies successfully inserted'));
+        exit();
+    }   
+
+    public function editMultiProductDiscountGeneralInformation(Request $request){
+        if(!isset($request->discountId) || 
+            !isset($request->title) || 
+            !isset($request->description) ||
+            !isset($request->startDate) || 
+            !isset($request->finishDate) ||
+            !isset($request->expirationDate) ||
+            !isset($request->status)){
+
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'not enough information', 'umessage' => 'ورودی کافی نیست'));
+            exit();
+        }
+
+        $discountId = $request->discountId;
+        $title = $request->title;
+        $description = $request->description;
+        $startDate = $request->startDate;
+        $finishDate = $request->finishDate;
+        $expirationDate = $request->expirationDate;
+        $status = $request->status;
+
+        if($startDate == 0){
+            $startDate = "NULL";
+        }
+        if($finishDate == 0){
+            $finishDate = "NULL";
+        }
+        if($expirationDate == 0){
+            $expirationDate = "NULL";
+        }
+
+        $queryResult = DB::update(
+            "UPDATE discounts 
+            SET title = '$title', 
+                `description` = '$description', 
+                `start_date` = $startDate, 
+                finish_date = $finishDate, 
+                expiration_date = $expirationDate, 
+                `status` = $status  
+            WHERE id = $discountId AND 
+                `type_id` = 5 "
+        );
+        if(!$queryResult){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'error while updating the discount', 'umessage' => 'خطا هنگام بروزرسانی تخفیف'));
+            exit();
+        }
+        echo json_encode(array('status' => 'done', 'message' => 'discount successfully updated'));
+    }
+
+    public function multiProductDiscountProducts(Request $request){
+        if(!isset($request->discountId)){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'not enough parameter', 'umessage' => 'ورودی کافی نیست'));
+            exit();
+        }
+        $discountId = $request->discountId;
+        $discount = DB::select(
+            "SELECT * 
+            FROM discounts 
+            WHERE id = $discountId 
+            LIMIT 1 "
+        );
+        if(count($discount) === 0){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'discount not found', 'umessage' => 'تخفیف موردنظر یافت نشد'));
+            exit();
+        }
+        $discount = $discount[0];
+        if($discount->type_id !== 5){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'discount is not multi product', 'umessage' => 'تخفیف از نوع ویژه نیست'));
+            exit();
+        }
+        $products = DB::select(
+            "SELECT P.id AS productId,  
+                P.prodName_fa AS productName, 
+                P.url AS productUrl, 
+                PP.stock AS productStock, 
+                PP.price AS productPrice, 
+                (PS.sleep_daily * P.stock) AS productSleep, 
+                PS.profit_margin AS productProfitMargin, 
+                DD.percent AS discountPercent, 
+                DD.price AS discountPrice, 
+                DD.final_stock AS discountFinalStock 
+            FROM discount_dependencies DD 
+            INNER JOIN products P ON DD.dependency_id = P.id 
+            INNER JOIN product_pack PP ON DD.dependency_id = PP.product_id 
+            INNER JOIN product_statistics PS ON DD.dependency_id = PS.product_id 
+            WHERE DD.discount_id = $discountId AND 
+                PP.status = 1 AND 
+                DD.type_id = 1 "
+        );
+        if(count($products) === 0){
+            echo json_encode(array('status' => 'done', 'found' => false, 'message' => 'nothing found', 'umessage' => 'موردی یافت نشد'));
+        }else{
+            echo json_encode(array('status' => 'done', 'found' => true, 'message' => 'products successfully found', 'products' => $products));
+
+        }
+    }
+
+    public function editMultiProductDiscountProductInformation(Request $request){
+        if(!isset($request->discountId) || !isset($request->productId) || !isset($request->price) || !isset($request->percent) || !isset($request->finalStock)){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'not enough information', 'umessage' => 'ورودی کافی نیست'));
+            exit();
+        }
+        $discountId = $request->discountId;
+        $productId = $request->productId;
+        $percent = $request->percent;
+        $price = $request->price;
+        $finalStock = $request->finalStock;
+
+        $discount = DB::select(
+            "SELECT id, `type_id` FROM discounts WHERE id = $discountId"
+        );
+        if(count($discount) === 0){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'discount not found', 'umessage' => 'تخفیف موردنظر یافت نشد'));
+            exit();
+        }
+        $discount = $discount[0];
+        if($discount->type_id !== 5){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'discount is not multi product', 'umessage' => 'نوع تخفیف مورد نظر ویژه محصولات نیست'));
+            exit();
+        }
+
+        $updateResult = DB::update(
+            "UPDATE discount_dependencies 
+            SET price = $price, 
+                percent = $percent, 
+                final_stock = $finalStock 
+            WHERE 
+                discount_id = $discountId AND 
+                dependency_id = $productId AND 
+                `type_id` = 1"
+        );
+        
+        if(!$updateResult){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'error while updating the discount dependency information', 'umessage' => 'خطا در بروزرسانی اطلاعات محصول'));
+        }else{
+            echo json_encode(array('status' => 'done', 'source' => 'c', 'message' => 'successfully updated'));
+        }
+    }
+
+    public function removeProductFromMultiProductDiscount(Request $request){
+        if(!isset($request->discountId) || !isset($request->productId)){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'not enough parameter', 'umessage' => 'ورودی کافی نیست'));
+            exit();
+        }
+        $discountId = $request->discountId;
+        $productId = $request->productId;
+        $discount = DB::select(
+            "SELECT id, `type_id` FROM discounts WHERE id = $discountId LIMIT 1"
+        );
+        if(count($discount) === 0){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'discount not found', 'umessage' => 'تخفیف موردنظر یافت نشد'));
+            exit();
+        }
+        $discount = $discount[0];
+        if($discount->type_id !== 5){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'discount is not multi product', 'umessage' => 'تخفیف مورد نظر ویژه محصولات نیست'));
+            exit();
+        }
+        try{
+            DB::delete(
+                "DELETE FROM discount_dependencies 
+                WHERE discount_id = $discountId AND 
+                    dependency_id = $productId AND 
+                    `type_id` = 1"
+            );
+            echo json_encode(array('status' => 'done', 'message' => 'dependency successfully removed'));
+        }catch(Exception $e){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => $e->getMessage(), 'umessage' => 'خطا هنگام حذف محصول'));
+        }
+    }
+
+    public function multiProductDiscountInformation(Request $request){
+        if(!isset($request->discountId)){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'not enough parameter', 'umessage' => 'ورودی کافی نیست'));
+            exit();
+        }
+        $discountId = $request->discountId;
+
+        $discount = DB::select(
+            "SELECT title, `description`,  `start_date`, `finish_date`, expiration_date, `status`  
+            FROM discounts 
+            WHERE id = $discountId AND `type_id` = 5  
+            LIMIT 1 "
+        );
+
+        if(count($discount) === 0){
+            echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'discount not found', 'umessage' => 'تخفیف موردنظر یافت نشد'));
+            exit();
+        }
+
+        $discount = $discount[0];
+
+        echo json_encode(array('status' => 'done', 'message' => 'discount information successfully found', 'information' => $discount));
+    }
+
+    
 }

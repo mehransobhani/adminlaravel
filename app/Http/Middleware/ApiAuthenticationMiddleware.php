@@ -20,7 +20,7 @@ class ApiAuthenticationMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        /*if($request->bearerToken() == NULL){
+        if($request->bearerToken() == NULL){
             echo json_encode(array('status' => 'failed', 'source' => 'middleware', 'reason' => 'missingHeader', 'message' => 'user token is missing'));
             exit();
         }
@@ -81,8 +81,8 @@ class ApiAuthenticationMiddleware
             $request->userId = $userAuthentication->user_id;
             return $next($request);
             exit();
-        }*/
-        $request->userId = 238856;
-        return $next($request);
+        }
+        /*$request->userId = 238856;
+        return $next($request);*/
     }
 }
