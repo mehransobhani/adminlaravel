@@ -132,3 +132,17 @@ Route::get('/art/unlinked-arts',                                                
 
 /***| ACADEMY ROUTES |***/
 Route::get('/academy/all-courses',                                                  [AcademyController::class,  'allCourses']); // OK!
+
+
+
+
+/***| FAQ ROUTES |***/
+Route::get('/cats_list',                                                  [FaqController::class,  'cats_list']); // OK!
+Route::post      ('/cats_update' ,                                        [FaqController::class , 'cats_update']    );
+Route::post      ('/add_cat' ,                                            [FaqController::class , 'add_cat']    );
+Route::get      ('/get_select_answer/{id}' ,                              [FaqController::class , 'get_select_answer']    );
+Route::get      ('/get_cat_list' ,                                        [FaqController::class , 'get_cat_list']    );
+Route::post      ('/add_answer' ,                                         [FaqController::class , 'add_answer']    );
+Route::post      ('/update_answer' ,                                      [FaqController::class , 'update_answer']    );
+Route::get      ('/get_answer_item' ,                                     [FaqController::class , 'get_answer_item']    );
+
