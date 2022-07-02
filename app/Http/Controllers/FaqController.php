@@ -2,75 +2,55 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Question;
-use App\Models\QuestionCat;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use App\Classes\DeleteAllExtensionFile;
+use App\Classes\GetAllSrc\GetAllSrcStrategy;
+use App\Http\Requests\FaqRequest;
+use App\Repository\RepositoryInterface;
 
-class FaqController extends Controller
+
+class FaqController
 {
+    private $repository;
+    private $allExtensionFile;
 
-    public function cats_list()
+    public function __construct(RepositoryInterface $repository , DeleteAllExtensionFile $allExtensionFile)
     {
-        $model=QuestionCat::paginate(10);
+        $this->repository = $repository;
+        $this->allExtensionFile = $allExtensionFile;
+     }
 
-        return Response()->json($model,200);
-
-    }
-    public function cats_update(Request $request)
+    public function get_by_id($id)
     {
-        $inputs=$request->only([
-            "title",
-            "status",
-        ]);
-        $sample = QuestionCat::where('id', $request->id)->update($inputs);
-        return Response()->json($sample);
-    }  public function get_answer_item()
-    {
-        $model = DB::table('questions')
-            ->join('question_cats', 'question_cats.id', '=', 'questions.question_cats_id')
-            ->select('questions.*', 'question_cats.title')
-            ->paginate(5);
-        return Response()->json($model);
-    }
-    public function add_cat(Request $request)
-    {
-        $inputs=$request->only([
-            "title",
-            "status",
-        ]);
-        $model =QuestionCat::create($inputs);
 
-
-        return Response()->json($model);
-    }
-
-    public function get_select_answer($id)
-    {
-        $sample = Question::find($id);
-        return Response()->json($sample);
-    }
-    public function get_cat_list()
-    {
-        $model=QuestionCat::all();
-
-        return Response()->json($model,200);
+        return $this->repository->get_by_id($id);
 
     }
-    public function add_answer(Request $request)
+
+    public function get_all()
     {
-        $inputs=$request->only([
-            'question','answer','top','status','question_cats_id','short_answer'
-        ]);
-        $model =Question::create($inputs);
-        return Response()->json($model);
+        return $this->repository->get_all();
+
     }
-    public function update_answer(Request $request)
+
+    public function create(FaqRequest $request)
     {
-        $inputs=$request->only([
-            'question','answer','top','status','question_cats_id','short_answer'
-        ]);
-        $sample = Question::where('id', $request->id)->update($inputs);
-        return Response()->json($sample);
+       $data = $this->repository->create($request->only('question', 'answer', 'top', 'status', 'question_cats_id', 'short_answer'));
+       $all=$this->repository->get_list();
+        $get_src = new GetAllSrcStrategy("faq_answer");
+        $arr[] = $get_src->gets($all);
+        $this->allExtensionFile->delete($arr[0],"/public/Ckeditor/Faq/*");
+         return $data;
+    }
+
+    public function update(FaqRequest $request)
+    {
+        $data = $this->repository->update($request->only('question', 'answer', 'top', 'status', 'question_cats_id', 'short_answer'), $request->id);
+        $all=$this->repository->get_list();
+        $get_src = new GetAllSrcStrategy("faq_answer");
+        $arr[] = $get_src->gets($all);
+        $this->allExtensionFile->delete($arr[0],"/public/Ckeditor/Faq/*");
+        return $data;
+
     }
 }
+

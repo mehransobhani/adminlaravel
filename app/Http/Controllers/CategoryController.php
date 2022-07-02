@@ -34,17 +34,8 @@ class CategoryController extends Controller
         $categoriesInformation = DB::select(
             "SELECT C.id, C.name, C.url 
             FROM category C 
-            WHERE C.id IN (
-                SELECT DISTINCT PC.category 
-                FROM product_category PC 
-                INNER JOIN products P ON PC.product_id = P.id 
-                INNER JOIN product_pack PP ON PC.product_id = PP.product_id 
-                WHERE P.prodStatus = 1 AND
-                    P.stock > 0 AND 
-                    PP.status = 1 AND 
-                    PP.stock > 0 AND 
-                    (PP.stock * PP.count <= P.stock)
-                )"
+	    WHERE C.hide = 0 
+	    ORDER BY C.name ASC "
         );
         if(count($categoriesInformation) === 0){
             echo json_encode(array('status' => 'done', 'found' => false, 'message' => 'there is not any active category', 'umessage' => 'موردی یافت نشد', 'categories' => []));

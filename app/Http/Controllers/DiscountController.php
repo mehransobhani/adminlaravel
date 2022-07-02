@@ -1235,7 +1235,7 @@ class DiscountController extends Controller
         $reports = DB::select(
             "SELECT DL.id AS logId, DL.discount_id AS discountId, D.title AS discountTitle, U.username, U.name AS uname, DL.order_id AS orderId, O.date 
             FROM discount_logs DL INNER JOIN users U ON DL.user_id = U.id INNER JOIN orders O ON DL.order_id = O.id INNER JOIN discounts D ON DL.discount_id = D.id
-            $typeQuery $orderIdQuery $discountIdQuery $usernameQuery $dateQuery "
+            $typeQuery $orderIdQuery $discountIdQuery $usernameQuery $dateQuery ORDER BY DL.id DESC "
         );
         $count = count($reports);
         if($count === 0){
@@ -1250,6 +1250,15 @@ class DiscountController extends Controller
         echo json_encode(array('status' => 'done', 'found' => true, 'count' => $count, 'reports' => $selectedReports, 'message' => 'reports found successfully'));
     }
 
+    public function getSubCategories($categoryId){
+        $response = $categoryId . '';
+        $scs = DB::select("SELECT * FROM category WHERE parentID = $categoryId ");
+        foreach($scs as $category){
+            $response = $response . ', ' . $this->getSubCategories($category->id);
+        }
+        return $response;
+    }
+
     public function noPaginatedFilterCategoryProducts(Request $request){
         if(!isset($request->categoryId) || !isset($request->discountId)){
             echo json_encode(array('status' => 'failed', 'source' => 'c', 'message' => 'not enough information', 'umessage' => 'ورودی کافی نیست'));
@@ -1262,6 +1271,11 @@ class DiscountController extends Controller
         $stockQuery = '';
         $sleepQuery = '';
         $factorQuery = '';
+
+	$category = DB::select("SELECT id, url FROM category WHERE id = $categoryId LIMIT 1");
+	$category = $category[0];
+
+	$categoryUrl = $category->url . '%';
 
         if(isset($request->minPrice)){
             $priceQuery = $priceQuery . " AND PP.price >= $request->minPrice ";
@@ -1289,6 +1303,8 @@ class DiscountController extends Controller
         if(isset($request->maxFactor)){
             $factorQuery = $factorQuery . " AND PS.last_factor <= $request->maxFactor ";
         }
+
+	$subCategories = $this->getSubCategories($categoryId);
         
         $products = DB::select( 
             "SELECT P.id, 
@@ -1298,19 +1314,23 @@ class DiscountController extends Controller
                 P.buyPrice AS productBuyPrice, 
                 PP.price AS productPrice, 
                 PP.stock AS productStock, 
+		PP.id AS productPackId, 
                 (PS.sleep_daily * P.stock) AS productSleep, 
                 PS.profit_margin AS productProfitMargin 
             FROM products P 
                 INNER JOIN product_category PC ON P.id = PC.product_id 
+		INNER JOIN category C ON PC.category = C.id 
+		INNER JOIN products_location PL ON P.id = PL.product_id 
                 INNER JOIN product_pack PP ON P.id = PP.product_id 
                 INNER JOIN product_info `PI` ON P.id = `PI`.product_id  
                 INNER JOIN product_statistics PS ON P.id = PS.product_id 
-            WHERE PC.category = $categoryId AND 
+            WHERE C.id IN ($subCategories) AND 
+		PC.kind = 'primary' AND 
                 P.prodStatus = 1 AND 
-                P.stock > 0 AND 
+                PL.stock > 0 AND 
+		PL.anbar_id = 1 AND 
                 PP.status = 1 AND 
-                PP.stock > 0 AND 
-                (PP.stock * PP.count <= P.stock) 
+                PL.pack_stock > 0 
                 AND P.id NOT IN ( 
                     SELECT dependency_id 
                     FROM discount_dependencies 
@@ -1327,8 +1347,17 @@ class DiscountController extends Controller
             echo json_encode(array('status' => 'done', 'found' => false, 'source' => 'c', 'message' => 'there is any available product in this filter', 'umessage' => 'موردی یافت نشد', 'products' => []));
             exit();
         }
+
+	$selectedProducts = [];
+	$selectedProductIds = [];
+	foreach($products as $p){
+		if(array_search($p->id, $selectedProductIds) === false){
+			array_push($selectedProductIds, $p->id);
+			array_push($selectedProducts, $p);
+		}
+	}
         
-        echo json_encode(array('status' => 'done', 'found' => true, 'message' => 'products successfully found', 'products' => $products));
+        echo json_encode(array('status' => 'done', 'found' => true, 'message' => 'products successfully found', 'products' => $selectedProducts));
     }
 
     public function addProductsToMultiProductDiscount(Request $request){

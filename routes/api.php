@@ -14,12 +14,15 @@ use App\Models\ServicePlan;
 use Symfony\Component\CssSelector\Node\FunctionNode;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\DiscountController;
+use App\Http\Controllers\FaqController;
+use App\Http\Controllers\CatFaqController;
 use App\Http\Controllers\QueryController;
 use App\Http\Middleware\ApiAdminAuthenticationMiddleware;
 use App\Http\Middleware\ApiAuthenticationMiddleware;
 use App\Models\Discount;
 use App\Models\Province;
 use App\Models\SP;
+use App\Http\Controllers\FileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -66,6 +69,33 @@ Route::post('/add-delivery',                                                    
 Route::post('/get-service-and-price',                                               [DeliveryController::class, 'getServiceAndPrice']);
 
 Route::middleware([ApiAdminAuthenticationMiddleware::class])->group(function () {
+
+/***| FAQ ROUTES |***/
+Route::get('/cats_list',                                                  [FaqController::class,  'cats_list']); // OK!
+Route::post	 ('/cats_update' ,                                        [FaqController::class , 'cats_update']    );
+Route::post	 ('/add_cat' ,                                            [FaqController::class , 'add_cat']    );
+Route::get	('/get_select_answer/{id}' ,                              [FaqController::class , 'get_select_answer']    );
+Route::get	('/get_cat_list' ,                                        [FaqController::class , 'get_cat_list']    );
+Route::post	 ('/add_answer' ,                                         [FaqController::class , 'add_answer']    );
+Route::post	 ('/update_answer' ,                                      [FaqController::class , 'update_answer']    );
+Route::get	('/get_answer_item' ,                                     [FaqController::class , 'get_answer_item']    );
+ Route::post      ('/upload_ckeditor' ,                                     [\App\Http\Controllers\FilesController::class, 'upload']);
+
+
+
+Route::get      ('/find_faq/{id}' ,                              [FaqController::class, 'get_by_id']    );
+Route::get      ('/all_faq/' ,                              [FaqController::class , 'get_all']    );
+Route::post     ('/create_faq/' ,                              [FaqController::class , 'create']    );
+
+
+
+Route::get      ('/find_catfaq/{id}' ,                                [CatFaqController::class, 'get_by_id']    );
+Route::get      ('/all_catfaq/' ,                              [CatFaqController::class, 'get_all']    );
+Route::get      ('/list_catfaq/' ,                              [CatFaqController::class, 'get_list']    );
+Route::post     ('/create_catfaq/' ,                        [CatFaqController::class,  'create']    );
+Route::post     ('/update_catfaq/' ,                           [CatFaqController::class, 'update']    );
+
+
 
     /***| DISCOUNT ROUTES |***/
     Route::get('/all-discounts',                                                    [DiscountController::class, 'getAllDiscounts']);
@@ -136,13 +166,7 @@ Route::get('/academy/all-courses',                                              
 
 
 
-/***| FAQ ROUTES |***/
-Route::get('/cats_list',                                                  [FaqController::class,  'cats_list']); // OK!
-Route::post      ('/cats_update' ,                                        [FaqController::class , 'cats_update']    );
-Route::post      ('/add_cat' ,                                            [FaqController::class , 'add_cat']    );
-Route::get      ('/get_select_answer/{id}' ,                              [FaqController::class , 'get_select_answer']    );
-Route::get      ('/get_cat_list' ,                                        [FaqController::class , 'get_cat_list']    );
-Route::post      ('/add_answer' ,                                         [FaqController::class , 'add_answer']    );
-Route::post      ('/update_answer' ,                                      [FaqController::class , 'update_answer']    );
-Route::get      ('/get_answer_item' ,                                     [FaqController::class , 'get_answer_item']    );
+
+
+Route::post     ('/update_faq/' ,                              [FaqController::class , 'update']    );
 
